@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import os
-import os.path
 import re
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
@@ -28,24 +27,23 @@ ys = [x.iloc[:, 0].values for x in dats]
 # 1 is X test, 2 is y train, 3 y test
 tt_splits = [train_test_split(x, y, test_size=0.2, random_state=1) for x, y in zip(Xs, ys)]
 
-# that's awful to work with, dict to organize the t/t splits so that single magic number typo later won't break everything
+# dict to organize the t/t splits in a less awful way
 trains_tests = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
 
-# Note: We want to interpret the trees as explanations of the
-# outcome, and check if those explanations are correct by
-# comparing to the data-generating causal structure. So
-# we don't really care about the model predictions
-# at this point -> an incorrect explanation might
-# predict false outcomes, but also an _incomplete_
-# _correct_ explanation would. Similarly, a model/explanation
-# that is
-# incorrect by way of including redundant parts might make
-# better predictions than an incomplete correct model. Anyway,
-# we don't really need the test sets here, but there they are
-# if we want to do something with them later.
+# Note: We want to think of the trees as putative
+# explanations of the
+# outcome and check their correctness w.r.t the data-generating
+# causal structure. So
+# we don't care about the model predictions
+# -> an incorrect explanation might
+# predict false outcomes, but also an incomplete
+# _correct_ explanation would, and a causally incorrect
+# model may predict better than an incomplete correct model.
+# So the test sets are not needed, but there
+# they are if we want to do something with them later.
 
-# model init
-dt_cl = DecisionTreeClassifier(criterion='entropy', max_depth=7, random_state=1) # no idea if the params make sense
+# model init, no idea if the params make sense
+dt_cl = DecisionTreeClassifier(criterion='entropy', max_depth=7, random_state=1)
 
 # fit models
 fitted = [dt_cl.fit(x, y) for x, y in zip(trains_tests["X_train"], trains_tests["y_train"])]
@@ -77,7 +75,7 @@ def get_decision_paths(tree, feature_names):
                 recurse(right[node], path + [f"{features[node]} > {threshold[node]:.2f}"])
 
     recurse(0, [])
-    return paths_by_class[1] # return only paths for out present
+    return paths_by_class[1]
 
 # replace 'X <= 0.50' w/ 'x' and 'X > 0.50' w/ X.
 def eq_to_lits(input_string):
@@ -87,13 +85,15 @@ def eq_to_lits(input_string):
       output_string = re.sub(pattern_gt, lambda m: m.group(1).upper(), output_string)
       return output_string
 
-# for translating from fitted dt to cna asf
-def dt_to_cna(dt, feature_names, outcome):
+# translate fitted DTs paths to cna asfs
+def dt_to_cna(dt, feature_names, outcome, incl.out = False):
     paths = get_decision_paths(dt, feature_names=feature_names)
     suffs = [eq_to_lits(x) for x in paths]
-    return "+".join(suffs)+"<->"+outcome
+    if incl.out:
+        return "+".join(suffs)+"<->"+outcome
+    else:
+        return "+".join(suffs)
 
-# convert fitted dts to cna asfs
 mods = [dt_to_cna(x, feature_names, outcome) for x in fitted]
 
 # write mods to file
