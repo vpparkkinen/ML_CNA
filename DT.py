@@ -15,8 +15,8 @@ for f in range(1, nfil+1):
 # increase N
 dats = [pd.concat([i] * 100, ignore_index=True) for i in dats]
 
-feature_names = ["B", "C", "D", "E", "F"]
-outcome = "A"
+feature_names = list(dats[0])[1:]
+outcome = list(dats[0])[0]
 
 # store outcomes ('y') and exo vars/predictors ('X') to separate lists, .value for getting numpy arrays to be used in training
 Xs = [x.iloc[:, 1:].values for x in dats]
@@ -43,10 +43,18 @@ trains_tests = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, z
 # they are if we want to do something with them later.
 
 # model init, no idea if the params make sense
-dt_cl = DecisionTreeClassifier(criterion='entropy', max_depth=7, random_state=1)
+#dt_cl = DecisionTreeClassifier(criterion='entropy', max_depth=7, random_state=1)
 
 # fit models
-fitted = [dt_cl.fit(x, y) for x, y in zip(trains_tests["X_train"], trains_tests["y_train"])]
+#fitted = [dt_cl.fit(x, y) for x, y in zip(trains_tests["X_train"], trains_tests["y_train"])]
+
+tts = list(zip(trains_tests["X_train"], trains_tests["y_train"]))
+
+fitted = []
+for i in range(len(tts)):
+    dt_cl = DecisionTreeClassifier(criterion='entropy', max_depth=7, random_state=1)
+    f.append(dt_cl.fit(tts[i][0], tts[i][1]))
+
 
 # func for getting a dict of tree paths
 # to do: ditch the 0-paths
@@ -86,10 +94,10 @@ def eq_to_lits(input_string):
       return output_string
 
 # translate fitted DTs paths to cna asfs
-def dt_to_cna(dt, feature_names, outcome, incl.out = False):
+def dt_to_cna(dt, feature_names, outcome, incl_out = False):
     paths = get_decision_paths(dt, feature_names=feature_names)
     suffs = [eq_to_lits(x) for x in paths]
-    if incl.out:
+    if incl_out:
         return "+".join(suffs)+"<->"+outcome
     else:
         return "+".join(suffs)
