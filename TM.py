@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from pyTsetlinMachine.tm import MultiClassTsetlinMachine
+import tm_aux_funcs
 
 nfil = len([1 for x in list(os.scandir("data")) if x.is_file()])
 
@@ -11,12 +12,28 @@ for f in range(1, nfil+1):
   dats.append(pd.read_csv("data/dat"+str(f)+".csv", sep = ";"))
 
 # increase N
-dats = [pd.concat([i] * 100, ignore_index=True) for i in dats]
+# dats = [pd.concat([i] * 100, ignore_index=True) for i in dats]
 
 feature_names = list(dats[0])[1:]
 outcome = list(dats[0])[0]
+n_features = len(feature_names)
 
-# store outcomes ('y') and exo vars/predictors ('X') to separate lists, .value for getting numpy arrays to be used in training
+# cna literals for translating between TM and CNA model syntax
+cna_lits = list(dats[0])[1:] + [x.lower() for x in list(dats[0])[1:]]
+
+# tm literals
+# NOTE: this is an arbitrary choice, based on the
+# clauses_from_TM() -function's output syntax for the clauses,
+# i.e. a (positive) literal starts with (capital ) "X" and its
+# negation with (lower case) "x", followed by numbers.
+tm_pos_lits = ["X"+i for i in map(str, list(range(len(feature_names))))]
+tm_neg_lits = [i.lower() for i in tm_pos_lits]
+tm_lits = tm_pos_lits + tm_neg_lits
+
+# translation dict between tm clauses and cna asfs
+f_translate_dict = dict(zip(tm_lits, cna_lits))
+
+# store outcomes ('y') and exo vars/predictors ('X') to separate lists, .values for getting numpy arrays to be used in training
 Xs = [x.iloc[:, 1:].values for x in dats]
 ys = [x.iloc[:, 0].values for x in dats]
 
@@ -28,22 +45,16 @@ tt_splits = [train_test_split(x, y, test_size=0.2, random_state=1) for x, y in z
 # dict to organize the t/t splits in a less awful way
 tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
 
-n_clauses = 10
+n_clauses = 10 # how many clauses to use in TM
 
-tm = MultiClassTsetlinMachine(n_clauses, 15, 3.0, boost_true_positive_feedback=1)
+models = []
+for i in range(len(dats)):
+	tm = MultiClassTsetlinMachine(n_clauses, 15, 3.0, boost_true_positive_feedback=1)
+	tm.fit(tts["X_train"][i], tts["y_train"][i])
+	models.append(tm_to_asf(tm,
+												 n_clauses,
+												 n_features,
+												 f_translate_dict))
 
-tm.fit(tts["X_train"][0], tts["y_train"][0])
-
-def clauses_from_TM(tm, nr_of_clauses,
-										number_of_features):
-	out=[]
-	for j in range(0, nr_of_clauses, 2):
-		l = []
-		for k in range(number_of_features*2):
-			if tm.ta_action(1, j, k) == 1:
-				if k < number_of_features:
-					l.append("x%d" % (k))
-				else:
-					l.append("-x%d" % (k-number_of_features))
-			out.append("*".join(l))
-		return out
+# write mods to file
+np.savetxt("tm_results.txt", mods, delimiter="\n", fmt="%s")

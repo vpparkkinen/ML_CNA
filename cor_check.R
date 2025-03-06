@@ -8,16 +8,20 @@ if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
 library(cna)
 outcome = "A"
 targets <- readLines(file("targets.txt"))
-re <- readLines(file("ress.txt"))
+conds <- readLines(file("tm_results.txt"))
 
-conds <- unlist(lapply(re, \(x) getCond(selectCases(x))))
+# do this if the the stuff in `conds` is not in DNF
+#conds <- unlist(lapply(conds, \(x) getCond(selectCases(x))))
 
-r_conds <- lapply(conds, ereduce) 
-r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome)))
+nemp <- sapply(conds, \(x) nchar(x)>0)
+
+r_conds <- lapply(conds[nemp], \(x) if (nchar(x) == 0) return("") else rreduce(x)) 
+r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome),
+                                       USE.NAMES = FALSE))
 
 cors <- mapply(\(x, y) sapply(x, \(z) is.submodel(z, y)), 
           x = r_conds, 
-          y = targets,
+          y = targets[nemp],
           SIMPLIFY = FALSE,
           USE.NAMES = FALSE)
 
