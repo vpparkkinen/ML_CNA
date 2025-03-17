@@ -1,3 +1,6 @@
+import pyTsetlinMachine
+import re
+
 def clauses_from_TM(tm, nr_of_clauses,
 										number_of_features):
 	out=[]

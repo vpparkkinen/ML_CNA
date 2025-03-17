@@ -1,3 +1,6 @@
+import numpy as np
+import re
+
 def get_decision_paths(tree, feature_names):
     left = tree.tree_.children_left
     right = tree.tree_.children_right

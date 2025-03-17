@@ -4,7 +4,7 @@ import os
 import re
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-import dt_aux_funcs
+from dt_aux_funcs import *
 
 nfil = len([1 for x in list(os.scandir("data")) if x.is_file()])
 
