@@ -67,6 +67,17 @@ flipout <- function(data, outcome, proportion) {
   return(data)
 }
 
+#' Make a random `asf` from a vector of factor names
+#'
+#' @param chr Character vector of factor names
+#' @param outcome Outcome
+#' @param max.conj Integer, maximum number of conjuncts in a disjunct
+#' @param neg.prob Probability of negating a literal
+#'
+#' @return
+#' @export
+#'
+#' @examples
 rasf_hack <- function(chr, outcome, max.conj = 3L, neg.prob = 0.5){
   l <-  vector("list", length(chr))
   index <- 0L
@@ -90,6 +101,25 @@ rasf_hack <- function(chr, outcome, max.conj = 3L, neg.prob = 0.5){
   return(out)
 }
 
+
+
+#' Make a random `asf` from `data.frame` column names.
+#'
+#' @param data A `data.frame` -like object
+#' @param outcome Outcome factor
+#' @param max.conj Integer, maximum number of conjuncts
+#' @param neg.prob Probability of negating a literal
+#'
+#' @return Character
+#' @export
+#' @details
+#' Give `rasf_from_df` a data frame and the name of an outcome
+#' and it will return a random `asf` for the outcome,
+#' constructed from the column names of the data set.
+#' Control maximum number of conjuncts per disjunct with `max.conj`,
+#' and probability of negating a factor with `neg.prob`.
+#' 
+#' @examples
 rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
   chr <- names(data[,-which(names(data) == outcome)])
   out <- rasf_hack(chr = chr, 
