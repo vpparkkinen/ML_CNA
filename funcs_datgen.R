@@ -1,5 +1,5 @@
-bs_dat_create <- function(Nsets = 1e3, 
-                          N = 30, 
+bs_dat_create <- function(Nsets = 1e3,
+                          N = 30,
                           varnum = 7,
                           type = c("cs", "fs"),
                           varnames = LETTERS[1:varnum]){
@@ -8,7 +8,7 @@ bs_dat_create <- function(Nsets = 1e3,
     # c <- quote(runif(N, min = 0, max = 1))
     c <- "runif"
     args <- list(min = 0L, max = 1L)
-  } 
+  }
   if (type == "cs"){
     # c <- quote(rbinom(n = N, size = 1, prob = 0.5))
     c <- "rbinom"
@@ -16,14 +16,14 @@ bs_dat_create <- function(Nsets = 1e3,
   }
   dsets <- vector("list", Nsets)
   for(i in 1:Nsets){
-    
+
     # dsets[[i]] <- data.frame(setNames(
     #   replicate(varnum, eval(c), simplify = FALSE), varnames))
-    # 
+    #
     ss <- if(length(N) == 1L) list(n = N) else list(n = sample(N, 1))
-    
+
     dsets[[i]] <- data.frame(setNames(
-      replicate(varnum, 
+      replicate(varnum,
                 do.call(c, c(ss, args)), simplify = FALSE), varnames))
   }
   return(dsets)
@@ -67,6 +67,17 @@ flipout <- function(data, outcome, proportion) {
   return(data)
 }
 
+#' Make a random `asf` from a vector of factor names
+#'
+#' @param chr Character vector of factor names
+#' @param outcome Outcome
+#' @param max.conj Integer, maximum number of conjuncts in a disjunct
+#' @param neg.prob Probability of negating a literal
+#'
+#' @return
+#' @export
+#'
+#' @examples
 rasf_hack <- function(chr, outcome, max.conj = 3L, neg.prob = 0.5){
   l <-  vector("list", length(chr))
   index <- 0L
@@ -75,13 +86,13 @@ rasf_hack <- function(chr, outcome, max.conj = 3L, neg.prob = 0.5){
     pick <- sample(1:max.conj, 1)
     chosen <- if(length(chr) > pick){
       sample(1:length(chr), pick)
-      } else {1:length(chr)}  
+      } else {1:length(chr)}
     l[[index]] <- chr[chosen]
     chr <- chr[-chosen]
   }
   l <- l[unlist(lapply(l, \(x) !is.null(x)))]
-  out <- lapply(l, 
-                \(z) sapply(z, 
+  out <- lapply(l,
+                \(z) sapply(z,
                             \(x) ifelse(runif(1) < neg.prob, tolower(x), x),
                             USE.NAMES = FALSE))
   out <- lapply(out, \(x) paste0(x, collapse = "*"))
@@ -90,12 +101,30 @@ rasf_hack <- function(chr, outcome, max.conj = 3L, neg.prob = 0.5){
   return(out)
 }
 
+
+
+#' Make a random `asf` from `data.frame` column names.
+#'
+#' @param data A `data.frame` -like object
+#' @param outcome Outcome factor
+#' @param max.conj Integer, maximum number of conjuncts
+#' @param neg.prob Probability of negating a literal
+#'
+#' @return Character
+#' @export
+#' @details
+#' Give `rasf_from_df` a data frame and the name of an outcome
+#' and it will return a random `asf` for the outcome,
+#' constructed from the column names of the data set.
+#' Control maximum number of conjuncts per disjunct with `max.conj`,
+#' and probability of negating a factor with `neg.prob`.
+#'
+#' @examples
 rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
   chr <- names(data[,-which(names(data) == outcome)])
-  out <- rasf_hack(chr = chr, 
-                   outcome = outcome, 
+  out <- rasf_hack(chr = chr,
+                   outcome = outcome,
                    max.conj = max.conj,
                    neg.prob = neg.prob)
   return(out)
 }
-
