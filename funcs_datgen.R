@@ -66,3 +66,36 @@ flipout <- function(data, outcome, proportion) {
   }
   return(data)
 }
+
+rasf_hack <- function(chr, outcome, max.conj = 3L, neg.prob = 0.5){
+  l <-  vector("list", length(chr))
+  index <- 0L
+  while(length(chr) > 0L){
+    index <- index + 1L
+    pick <- sample(1:max.conj, 1)
+    chosen <- if(length(chr) > pick){
+      sample(1:length(chr), pick)
+      } else {1:length(chr)}  
+    l[[index]] <- chr[chosen]
+    chr <- chr[-chosen]
+  }
+  l <- l[unlist(lapply(l, \(x) !is.null(x)))]
+  out <- lapply(l, 
+                \(z) sapply(z, 
+                            \(x) ifelse(runif(1) < neg.prob, tolower(x), x),
+                            USE.NAMES = FALSE))
+  out <- lapply(out, \(x) paste0(x, collapse = "*"))
+  out <- paste0(unlist(out), collapse = "+")
+  out <- paste0(out, "<->", outcome)
+  return(out)
+}
+
+rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
+  chr <- names(data[,-which(names(data) == outcome)])
+  out <- rasf_hack(chr = chr, 
+                   outcome = outcome, 
+                   max.conj = max.conj,
+                   neg.prob = neg.prob)
+  return(out)
+}
+
