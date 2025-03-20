@@ -1,5 +1,7 @@
 import pyTsetlinMachine
 import re
+import pandas as pd
+from pyTsetlinMachine.tm import MultiClassTsetlinMachine
 
 class Paramtest:
 	def __init__(self, datasets, outcome, param_dict, test_size):
@@ -10,8 +12,8 @@ class Paramtest:
 		self.feat_names = list(datasets[0].drop(outcome, axis=1))
 		self.n_feature = len(self.feat_names)
 		self.test_size = test_size
-		self.Xs = [x.drop(outcome, axis=1) for x in datasets]
-		self.ys = [x.drop(self.feat_names, axis=1) for x in datasets]
+		self.Xs = [x.drop(outcome, axis=1).to_numpy() for x in datasets]
+		self.ys = [x[outcome].to_numpy() for x in datasets]
 
 	def ttsplits(self):
 		tt_splits = [train_test_split(x, y, test_size=0.2, random_state=1) for x, y in zip(self.Xs, self.ys)]
@@ -20,18 +22,25 @@ class Paramtest:
 
 	def TM(self):
 		tts = self.ttsplits()
+		p_combs = len(next(iter(self.param_dict.values())))
 		cna_lits = list(self.feat_names + [x.lower() for x in self.feat_names])
-		tm_pos_lits = ["X"+i for i in map(str, list(range(len(feature_names))))]
+		tm_pos_lits = ["X"+i for i in map(str, list(range(len(self.feat_names))))]
 		tm_neg_lits = [i.lower() for i in tm_pos_lits]
 		tm_lits = tm_pos_lits + tm_neg_lits
 		f_translate_dict = dict(zip(tm_lits, cna_lits))
-		models = []
-		for i in range(len(self.datasets)):
-			tmargs = {x: y[i], for x, y in self.param_dict.items()}
-			tm = MultiClassTsetlinMachine(**tmargs)
-			tm.fit(tts["X_train"][i], tts["y_train"][i])
-			models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
-		return models
+		allres = []
+		for comb in range(p_combs):
+			models = []
+			for dat in range(len(self.datasets)):
+				tmargs = {x: y[comb] for x, y in self.param_dict.items()}
+				tm = MultiClassTsetlinMachine(**tmargs)
+				tm.fit(tts["X_train"][dat], tts["y_train"][dat])
+				models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
+			res = {"models": models}
+			res.update(tmargs)
+			respd = pd.DataFrame(res)
+			allres.append(respd)
+		return allres
 
 	@staticmethod
 	def clauses_from_TM(tm, nr_of_clauses,
@@ -52,8 +61,8 @@ class Paramtest:
 							nr_of_clauses,
 							nr_of_features,
 							translate_dict):
-		fitted_clauses = clauses_from_TM(tm, nr_of_clauses, nr_of_features)
-		suffs = [tm_clause_to_cna(x, translate_dict) for x in fitted_clauses]
+		fitted_clauses = Paramtest.clauses_from_TM(tm, nr_of_clauses, nr_of_features)
+		suffs = [Paramtest.tm_clause_to_cna(x, translate_dict) for x in fitted_clauses]
 		suffs = list(filter(lambda x: len(x) != 0, suffs))
 		return "+".join(set(suffs))
 
