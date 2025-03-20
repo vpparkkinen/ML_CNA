@@ -43,7 +43,6 @@ tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_sp
 # So the test sets are not needed, but there
 # they are if we want to do something with them later.
 
-
 fitted = []
 for i in range(len(dats)):
     print(i)
