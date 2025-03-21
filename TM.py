@@ -15,49 +15,26 @@ for f in range(1, nfil+1):
 # increase N
 # dats = [pd.concat([i] * 100, ignore_index=True) for i in dats]
 
-feature_names = list(dats[0])[1:]
-outcome = list(dats[0])[0]
-n_features = len(feature_names)
+outcome = "A"
 
-# cna literals for translating between TM and CNA model syntax
-cna_lits = list(dats[0])[1:] + [x.lower() for x in list(dats[0])[1:]]
+# dictionary of parameter names and values to test
+tm_params = {"number_of_clauses": [10, 15],  "T": [10, 15], "s": [4,8]}
 
-# tm literals
-# NOTE: this is an arbitrary choice, based on the
-# clauses_from_TM() -function's output syntax for the clauses,
-# i.e. a (positive) literal starts with (capital ) "X" and its
-# negation with (lower case) "x", followed by numbers.
-tm_pos_lits = ["X"+i for i in map(str, list(range(len(feature_names))))]
-tm_neg_lits = [i.lower() for i in tm_pos_lits]
-tm_lits = tm_pos_lits + tm_neg_lits
+# Initiate a test with the data sets, outcome, dictionary
+# of parameters/values,
+# and train/test split size (in test_size)
+tmtest = Paramtest(dats, outcome=outcome, param_dict=tm_params, test_size=0.2)
 
-# translation dict between tm clauses and cna asfs
-f_translate_dict = dict(zip(tm_lits, cna_lits))
+# Run a test with Tsetlin machine.
+# Every data set is analysed with the settings fetched from
+# the parameter dictionary, and the models are collected.
+# This returns a list of
+# pd data frames, one per each parameter setting.
+# 'Models' column contains a model (which may be empty)
+# for each data set. Rest of the columns contain
+# the parameter values set by the user. Any params that
+# were not set by the user (i.e. defaults were used)
+# are not included.
+res = tmtest.TM()
 
-# store outcomes ('y') and exo vars/predictors ('X') to separate lists, .values for getting numpy arrays to be used in training
-Xs = [x.iloc[:, 1:].values for x in dats]
-ys = [x.iloc[:, 0].values for x in dats]
-
-# 80%/20% train/test splits
-# -> list of lists where element 0 is X train,
-# 1 is X test, 2 is y train, 3 y test
-tt_splits = [train_test_split(x, y, test_size=0.2, random_state=1) for x, y in zip(Xs, ys)]
-
-# dict to organize the t/t splits in a less awful way
-tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
-
-n_clauses = 20 # how many clauses to use in TM
-
-models = []
-for i in range(len(dats)):
-	tm = MultiClassTsetlinMachine(n_clauses, 29, 3.0, boost_true_positive_feedback=1)
-	tm.fit(tts["X_train"][i], tts["y_train"][i])
-	models.append(tm_to_asf(tm,
-												 n_clauses,
-												 n_features,
-												 f_translate_dict))
-
-models
-
-# write mods to file
-np.savetxt("tm_results.txt", models, delimiter="\n", fmt="%s")
+# Save the results in whichever way is convenient.

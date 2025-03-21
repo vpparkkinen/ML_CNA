@@ -1,6 +1,7 @@
 import pyTsetlinMachine
 import re
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from pyTsetlinMachine.tm import MultiClassTsetlinMachine
 
 class Paramtest:
@@ -16,14 +17,14 @@ class Paramtest:
 		self.ys = [x[outcome].to_numpy() for x in datasets]
 
 	def ttsplits(self):
-		tt_splits = [train_test_split(x, y, test_size=0.2, random_state=1) for x, y in zip(self.Xs, self.ys)]
+		tt_splits = [train_test_split(x, y, test_size=self.test_size, random_state=1) for x, y in zip(self.Xs, self.ys)]
 		tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
 		return tts
 
 	def TM(self):
 		tts = self.ttsplits()
 		p_combs = len(next(iter(self.param_dict.values())))
-		cna_lits = list(self.feat_names + [x.lower() for x in self.feat_names])
+		cna_lits = self.feat_names + [x.lower() for x in self.feat_names]
 		tm_pos_lits = ["X"+i for i in map(str, list(range(len(self.feat_names))))]
 		tm_neg_lits = [i.lower() for i in tm_pos_lits]
 		tm_lits = tm_pos_lits + tm_neg_lits
@@ -70,4 +71,4 @@ class Paramtest:
 	def tm_clause_to_cna(txt, translate_dict):
 		for key, value in translate_dict.items():
 			txt = re.sub(r"\b"+key+r"\b", value, txt)
-			return txt
+		return txt
