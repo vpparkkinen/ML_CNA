@@ -75,7 +75,7 @@ class Paramtest:
 			txt = re.sub(r"\b"+key+r"\b", value, txt)
 		return txt
 
-	def DT(self, epochs = 200, Incremental = False):
+	def DT(self):
 		p_combs = len(next(iter(self.param_dict.values())))
 		tts = self.ttsplits()
 		allres = []
@@ -84,7 +84,7 @@ class Paramtest:
 			for dat in range(len(self.datasets)):
 				dtargs = {x: y[comb] for x, y in self.param_dict.items()}
 				dt = DecisionTreeClassifier(**dtargs)
-				mod = dt.fit(tts["X_train"][dat], tts["y_train"][dat], epochs = epochs, Incremental = Incremental)
+				mod = dt.fit(tts["X_train"][dat], tts["y_train"][dat])
 				models.append(Paramtest.dt_to_cna(mod, self.feat_names, self.outcome))
 			res = {"models": models}
 			res.update(dtargs)
