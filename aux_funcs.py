@@ -23,7 +23,7 @@ class Paramtest:
 		tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
 		return tts
 
-	def TM(self):
+	def TM(self, epochs = 200, Incremental = False):
 		tts = self.ttsplits()
 		p_combs = len(next(iter(self.param_dict.values())))
 		cna_lits = self.feat_names + [x.lower() for x in self.feat_names]
@@ -37,7 +37,7 @@ class Paramtest:
 			for dat in range(len(self.datasets)):
 				tmargs = {x: y[comb] for x, y in self.param_dict.items()}
 				tm = MultiClassTsetlinMachine(**tmargs)
-				tm.fit(tts["X_train"][dat], tts["y_train"][dat])
+				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, Incremental=Incremental)
 				models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
 			res = {"models": models}
 			res.update(tmargs)
