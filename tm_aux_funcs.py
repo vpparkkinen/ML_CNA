@@ -1,7 +1,9 @@
 import pyTsetlinMachine
 import re
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
 from pyTsetlinMachine.tm import MultiClassTsetlinMachine
 
 class Paramtest:
@@ -72,3 +74,64 @@ class Paramtest:
 		for key, value in translate_dict.items():
 			txt = re.sub(r"\b"+key+r"\b", value, txt)
 		return txt
+
+	def DT(self):
+		p_combs = len(next(iter(self.param_dict.values())))
+		tts = self.ttsplits()
+		allres = []
+		for comb in range(p_combs):
+			models = []
+			for dat in range(len(self.datasets)):
+				dtargs = {x: y[comb] for x, y in self.param_dict.items()}
+				dt = DecisionTreeClassifier(**dtargs)
+				mod = dt.fit(tts["X_train"][dat], tts["y_train"][dat])
+				models.append(Paramtest.dt_to_cna(mod, self.feat_names, self.outcome))
+			res = {"models": models}
+			res.update(dtargs)
+			respd = pd.DataFrame(res)
+			allres.append(respd)
+		return allres
+
+	@staticmethod
+	def get_decision_paths(tree, feature_names):
+		left = tree.tree_.children_left
+		right = tree.tree_.children_right
+		threshold = tree.tree_.threshold
+		features = [feature_names[i] if i != -2 else "Leaf" for i in tree.tree_.feature]
+		value = tree.tree_.value
+		paths_by_class = {}
+
+		def recurse(node, path):
+			if left[node] == -1 and right[node] == -1:  # Leaf node
+				predicted_class = np.argmax(value[node])
+				if predicted_class not in paths_by_class:
+					paths_by_class[predicted_class] = []
+				paths_by_class[predicted_class].append("*".join(path))
+			else:
+				if left[node] != -1:
+					recurse(left[node], path + [f"{features[node]} <= {threshold[node]:.2f}"])
+				if right[node] != -1:
+					recurse(right[node], path + [f"{features[node]} > {threshold[node]:.2f}"])
+		recurse(0, [])
+		if 1 not in paths_by_class:
+			return [""]
+		else:
+			return paths_by_class[1]
+
+
+	@staticmethod
+	def eq_to_lits(input_string):
+		pattern_leq = r"([A-Za-z0-9]*)\s*<=\s*0\.50"
+		pattern_gt = r"([A-Za-z0-9]*)\s*>\s*0\.50"
+		output_string = re.sub(pattern_leq, lambda m: m.group(1).lower(), input_string)
+		output_string = re.sub(pattern_gt, lambda m: m.group(1).upper(), output_string)
+		return output_string
+
+	@staticmethod
+	def dt_to_cna(dt, feature_names, outcome, incl_out = False):
+		paths = Paramtest.get_decision_paths(dt, feature_names=feature_names)
+		suffs = [Paramtest.eq_to_lits(x) for x in paths]
+		if incl_out:
+			return "+".join(suffs)+"<->"+outcome
+		else:
+			return "+".join(suffs)
