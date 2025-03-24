@@ -6,24 +6,38 @@ if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
   setwd(dirname(path))
 }
 library(cna)
+library(data.table)
 outcome = "A"
 # load targets
 targets <- readLines(file("targets.txt"))
 # load preprocessed results created by DT/TM/whatever
-conds <- readLines(file("[YOUR_SAVED_RESULTS_HERE].txt"))
+
+res <- fread("CORRECT_DATASET_HERE.csv", sep = ",")
+res[,V1:=NULL]
+
+iters <- nrow(unique(res[,-c("models")]))
+targets <- replicate(iters, targets)
+targets <- c(targets)
+
 
 # do this below if the the stuff in `conds` is not in DNF
 #conds <- unlist(lapply(conds, \(x) getCond(selectCases(x))))
 
-nemp <- sapply(conds, \(x) nchar(x)>0) # non-empties
+nemp <- sapply(res$models, \(x) nchar(x)>0) # non-empties
+
+targets <- targets[nemp]
+res <- res[nemp,]
+
 
 # minimize, check for non-empty result again, for some reason
-r_conds <- lapply(conds[nemp], 
+r_conds <- lapply(res$models, 
                   \(x) if (nchar(x) == 0) return("") else rreduce(x)) 
 
 # paste the outcome to model lhs's
 r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome),
                                        USE.NAMES = FALSE))
+
+res[,rmodels := unlist(r_conds)]
 
 ## Check correctness, use the command on line 31 (commented out) 
 ## if using ereduce() for minimization. 
@@ -36,11 +50,14 @@ r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome),
 #          SIMPLIFY = FALSE,
 #          USE.NAMES = TRUE)
 
-cors <- mapply(\(x, y) is.submodel(x, y),
+cors <- mapply(\(x, y) frscore:::fsubmodel_asf(x, y),
                x = r_conds,
-               y = targets[nemp],
+               y = targets,
                SIMPLIFY = FALSE,
                USE.NAMES = TRUE)
+
+res[,correct:=unlist(cors)]
+res[,sum(correct), by = c("number_of_clauses", "T", "s")]
 
 tstamp <- gsub(" ", "_", date())
 

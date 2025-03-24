@@ -4,6 +4,7 @@ import os
 import re
 import time
 from sklearn.model_selection import train_test_split
+import itertools
 from sklearn.tree import DecisionTreeClassifier
 from pyTsetlinMachine.tm import MultiClassTsetlinMachine
 from aux_funcs import *
@@ -22,7 +23,9 @@ outcome = "A"
 
 ##>>>>>>>>> Decision tree
 
-dt_params = {"max_depth": [3,5], "max_features": [28,28], "max_leaf_nodes": [8, 15], "criterion": ["gini", "entropy"]}
+dt_params = {"max_depth": [3,5], "max_features": [28], "max_leaf_nodes": [8, 15], "criterion": ["gini", "entropy"]}
+
+dt_params = expand_grid(dt_params)
 
 DT = Paramtest(dats, outcome=outcome, param_dict=dt_params,
                test_size=0.2)
@@ -37,7 +40,9 @@ dtall.to_csv(filename)
 
 ##>>>>>>>>> Tsetlin Machine
 
-tm_params = {"number_of_clauses": [15,20], "T": [15,5], "s": [1,10]}
+tm_params = {"number_of_clauses": [10,15,20,25,30], "T": [5,10,15], "s": [5,10,15,20]}
+
+tm_params = expand_grid(tm_params)
 
 TM = Paramtest(dats, outcome=outcome, param_dict=tm_params,
                test_size=0.2)

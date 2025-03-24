@@ -2,9 +2,14 @@ import pyTsetlinMachine
 import re
 import numpy as np
 import pandas as pd
+import itertools
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from pyTsetlinMachine.tm import MultiClassTsetlinMachine
+
+def expand_grid(data_dict):
+    rows = itertools.product(*data_dict.values())
+    return pd.DataFrame.from_records(rows, columns=data_dict.keys())
 
 class Paramtest:
 	def __init__(self, datasets, outcome, param_dict, test_size):
@@ -23,9 +28,10 @@ class Paramtest:
 		tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
 		return tts
 
-	def TM(self, epochs = 200, Incremental = False):
+	def TM(self, epochs = 200, incremental = False):
 		tts = self.ttsplits()
-		p_combs = len(next(iter(self.param_dict.values())))
+		#p_combs = len(next(iter(self.param_dict.values())))
+		p_combs = self.param_dict.shape[0]
 		cna_lits = self.feat_names + [x.lower() for x in self.feat_names]
 		tm_pos_lits = ["X"+i for i in map(str, list(range(len(self.feat_names))))]
 		tm_neg_lits = [i.lower() for i in tm_pos_lits]
@@ -35,9 +41,10 @@ class Paramtest:
 		for comb in range(p_combs):
 			models = []
 			for dat in range(len(self.datasets)):
-				tmargs = {x: y[comb] for x, y in self.param_dict.items()}
+				# tmargs = {x: y[comb] for x, y in self.param_dict.items()}
+				tmargs = self.param_dict.iloc[comb,].to_dict()
 				tm = MultiClassTsetlinMachine(**tmargs)
-				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, Incremental=Incremental)
+				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, incremental=incremental)
 				models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
 			res = {"models": models}
 			res.update(tmargs)
@@ -76,13 +83,15 @@ class Paramtest:
 		return txt
 
 	def DT(self):
-		p_combs = len(next(iter(self.param_dict.values())))
+		#p_combs = len(next(iter(self.param_dict.values())))
+		p_combs = self.param_dict.shape[0]
 		tts = self.ttsplits()
 		allres = []
 		for comb in range(p_combs):
 			models = []
 			for dat in range(len(self.datasets)):
 				dtargs = {x: y[comb] for x, y in self.param_dict.items()}
+				print(dat)
 				dt = DecisionTreeClassifier(**dtargs)
 				mod = dt.fit(tts["X_train"][dat], tts["y_train"][dat])
 				models.append(Paramtest.dt_to_cna(mod, self.feat_names, self.outcome))
