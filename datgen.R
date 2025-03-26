@@ -39,7 +39,7 @@ if (length(LETTERS) < varnum){
 # to be used as targets. 
 # `relevants`:=number of factors included in the models.
 relevants <- 20
-targets <- replicate(20, rasf_hack(LETTERS[1:relevants], 
+targets <- replicate(100, rasf_hack(LETTERS[1:relevants], 
                                    outcome = "A",
                                    max.conj = 6,
                                    neg.prob = 0.5))
