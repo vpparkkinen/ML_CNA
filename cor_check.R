@@ -7,12 +7,13 @@ if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
 }
 library(cna)
 library(data.table)
+library(parallel)
 outcome = "A"
 # load targets
 targets <- readLines(file("targets.txt"))
 # load preprocessed results created by DT/TM/whatever
 
-res <- fread("CORRECT_DATASET_HERE.csv", sep = ",")
+res <- fread("tmres27032025-04h25m.csv", sep = ",")
 res[,V1:=NULL]
 
 iters <- nrow(unique(res[,-c("models")]))
@@ -30,8 +31,8 @@ res <- res[nemp,]
 
 
 # minimize, check for non-empty result again, for some reason
-r_conds <- lapply(res$models, 
-                  \(x) if (nchar(x) == 0) return("") else rreduce(x)) 
+r_conds <- mclapply(res$models,
+                  \(x) if (nchar(x) == 0) return("") else rreduce(x))
 
 # paste the outcome to model lhs's
 r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome),
@@ -39,9 +40,9 @@ r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome),
 
 res[,rmodels := unlist(r_conds)]
 
-## Check correctness, use the command on line 31 (commented out) 
-## if using ereduce() for minimization. 
-## With rreduce() there's only one minimized model for 
+## Check correctness, use the command on line 31 (commented out)
+## if using ereduce() for minimization.
+## With rreduce() there's only one minimized model for
 ## each redundant one.
 
 #cors <- mapply(\(x, y) sapply(x, \(z) is.submodel(z, y)),
@@ -50,19 +51,19 @@ res[,rmodels := unlist(r_conds)]
 #          SIMPLIFY = FALSE,
 #          USE.NAMES = TRUE)
 
-cors <- mapply(\(x, y) frscore:::fsubmodel_asf(x, y),
+cors <- mcmapply(\(x, y) frscore:::fsubmodel_asf(x, y),
                x = r_conds,
                y = targets,
                SIMPLIFY = FALSE,
                USE.NAMES = TRUE)
 
 res[,correct:=unlist(cors)]
-res[,sum(correct), by = c("number_of_clauses", "T", "s")]
+#res[,sum(correct), by = c("number_of_clauses", "T", "s")]
 
 tstamp <- gsub(" ", "_", date())
 
 # save correctness check result
-saveRDS(cors, paste0("TM_checked", tstamp)) 
+saveRDS(res, paste0("TM_checked", tstamp))
 
 cors <- unlist(lapply(cors, any))
 cor_percentage <- sum(cors) / length(targets)
@@ -70,22 +71,16 @@ cor_percentage <- sum(cors) / length(targets)
 
 ### Optional: Check for determining if the models include
 ### irrelevant factors.
-grab_lits <- function(model){
-  d <- frscore:::decompose_model(model)
-  out <- lapply(d$lhss, \(x) unlist(strsplit(x, "\\+")))
-  out <- lapply(out, \(x) unlist(strsplit(x, "\\*")))
-  #names(out) <- d$rhss
-  return(unlist(out))
-}
+# grab_lits <- function(model){
+#   d <- frscore:::decompose_model(model)
+#   out <- lapply(d$lhss, \(x) unlist(strsplit(x, "\\+")))
+#   out <- lapply(out, \(x) unlist(strsplit(x, "\\*")))
+#   #names(out) <- d$rhss
+#   return(unlist(out))
+# }
 
-model_facs <- lapply(r_conds, grab_lits)
+# model_facs <- lapply(r_conds, grab_lits)
 
-c_in_tar <- mapply(\(x,y) sapply(x, \(z) grepl(z, y)), x=model_facs, y=targets, SIMPLIFY=FALSE)
+# c_in_tar <- mapply(\(x,y) sapply(x, \(z) grepl(z, y)), x=model_facs, y=targets, SIMPLIFY=FALSE)
 
-which(sapply(c_in_tar, all)) |> length()
-
-
-
-
-
-
+# which(sapply(c_in_tar, all)) |> length()

@@ -43,6 +43,8 @@ class Paramtest:
 			for dat in range(len(self.datasets)):
 				# tmargs = {x: y[comb] for x, y in self.param_dict.items()}
 				tmargs = self.param_dict.iloc[comb,].to_dict()
+				print(dat)
+				print(tmargs)
 				tm = MultiClassTsetlinMachine(**tmargs)
 				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, incremental=incremental)
 				models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
@@ -92,6 +94,7 @@ class Paramtest:
 			for dat in range(len(self.datasets)):
 				dtargs = {x: y[comb] for x, y in self.param_dict.items()}
 				print(dat)
+				print(dtargs)
 				dt = DecisionTreeClassifier(**dtargs)
 				mod = dt.fit(tts["X_train"][dat], tts["y_train"][dat])
 				models.append(Paramtest.dt_to_cna(mod, self.feat_names, self.outcome))
