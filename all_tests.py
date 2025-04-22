@@ -23,7 +23,7 @@ outcome = "A"
 
 ##>>>>>>>>> Decision tree
 
-dt_params = {"max_depth": [3,5], "max_features": [28], "max_leaf_nodes": [8, 15], "criterion": ["gini", "entropy"]}
+dt_params = {"max_depth": [3,5], "max_features": [20], "max_leaf_nodes": [8, 15], "criterion": ["gini", "entropy"]}
 
 dt_params = expand_grid(dt_params)
 

@@ -71,16 +71,16 @@ cor_percentage <- sum(cors) / length(targets)
 
 ### Optional: Check for determining if the models include
 ### irrelevant factors.
-# grab_lits <- function(model){
-#   d <- frscore:::decompose_model(model)
-#   out <- lapply(d$lhss, \(x) unlist(strsplit(x, "\\+")))
-#   out <- lapply(out, \(x) unlist(strsplit(x, "\\*")))
-#   #names(out) <- d$rhss
-#   return(unlist(out))
-# }
+grab_lits <- function(model){
+  d <- frscore:::decompose_model(model)
+  out <- lapply(d$lhss, \(x) unlist(strsplit(x, "\\+")))
+  out <- lapply(out, \(x) unlist(strsplit(x, "\\*")))
+  #names(out) <- d$rhss
+  return(unlist(out))
+}
 
 # model_facs <- lapply(r_conds, grab_lits)
 
-# c_in_tar <- mapply(\(x,y) sapply(x, \(z) grepl(z, y)), x=model_facs, y=targets, SIMPLIFY=FALSE)
+c_in_tar <- mapply(\(x,y) sapply(x, \(z) grepl(z, y)), x=model_facs, y=targets, SIMPLIFY=FALSE)
 
-# which(sapply(c_in_tar, all)) |> length()
+which(sapply(c_in_tar, all)) |> length()
