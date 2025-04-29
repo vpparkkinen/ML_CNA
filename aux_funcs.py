@@ -5,7 +5,8 @@ import pandas as pd
 import itertools
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from pyTsetlinMachine.tm import MultiClassTsetlinMachine
+#from pyTsetlinMachine.tm import MultiClassTsetlinMachine
+from tmu.models.classification.vanilla_classifier import TMClassifier
 
 def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
@@ -20,8 +21,10 @@ class Paramtest:
 		self.feat_names = list(datasets[0].drop(outcome, axis=1))
 		self.n_feature = len(self.feat_names)
 		self.test_size = test_size
-		self.Xs = [x.drop(outcome, axis=1).to_numpy() for x in datasets]
-		self.ys = [x[outcome].to_numpy() for x in datasets]
+		# self.Xs = [x.drop(outcome, axis=1).to_numpy() for x in datasets]
+		self.Xs = [x.drop(outcome, axis=1).to_numpy(dtype=np.uint32) for x in datasets]
+		#self.ys = [x[outcome].to_numpy() for x in datasets]
+		self.ys = [x[outcome].to_numpy(dtype=np.uint32) for x in datasets]
 
 	def ttsplits(self):
 		tt_splits = [train_test_split(x, y, test_size=self.test_size, random_state=1) for x, y in zip(self.Xs, self.ys)]
@@ -45,8 +48,10 @@ class Paramtest:
 				tmargs = self.param_dict.iloc[comb,].to_dict()
 				print(dat)
 				print(tmargs)
-				tm = MultiClassTsetlinMachine(**tmargs)
-				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, incremental=incremental)
+				#tm = MultiClassTsetlinMachine(**tmargs)
+				tm = TMClassifier(**tmargs)
+				#tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, incremental=incremental)
+				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs)
 				models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
 			res = {"models": models}
 			res.update(tmargs)
@@ -54,20 +59,49 @@ class Paramtest:
 			allres.append(respd)
 		return allres
 
+	# @staticmethod
+	# def clauses_from_TM(tm, nr_of_clauses,
+	# 									number_of_features):
+	# 	out=[]
+	# 	for j in range(0, nr_of_clauses, 2):
+	# 		l = []
+	# 		for k in range(number_of_features*2):
+	# 				if tm.ta_action(1, j, k) == 1:
+	# 					if k < number_of_features:
+	# 						l.append("X%d" % (k))
+	# 					else:
+	# 						l.append("x%d" % (k-number_of_features))
+	# 						out.append("*".join(l))
+	# 	return out
+
 	@staticmethod
-	def clauses_from_TM(tm, nr_of_clauses,
-										number_of_features):
-		out=[]
-		for j in range(0, nr_of_clauses, 2):
+	def clauses_from_TM(tm, nr_of_clauses, number_of_features):
+		clauses = []
+		for j in range(nr_of_clauses // 2):
 			l = []
-			for k in range(number_of_features*2):
-					if tm.ta_action(1, j, k) == 1:
-						if k < number_of_features:
-							l.append("X%d" % (k))
-						else:
-							l.append("x%d" % (k-number_of_features))
-							out.append("*".join(l))
-		return out
+			for k in range(number_of_features * 2):
+				if tm.get_ta_action(j, k, the_class=1, polarity=0):
+					if k < number_of_features:
+						l.append(f"X{k}")
+					else:
+						l.append(f"x{k - number_of_features}")
+			clauses.append("*".join(l))
+		return clauses
+
+
+
+		# clauses = []
+    # for j in range(args.number_of_clauses // 2):
+    #     l = []
+    #     for k in range(args.number_of_features * 2):
+    #         if tm.get_ta_action(j, k, the_class=1, polarity=0):
+    #             if k < args.number_of_features:
+    #                 l.append(f"X{k}")
+    #             else:
+    #                 l.append(f"x{k - args.number_of_features}")
+    #     print(" ∧ ".join(l))
+    #     clauses.append(" ∧ ".join(l))
+    # d_clauses[f"Positive clauses for outcome={1}"] = clauses
 
 	def tm_to_asf(self, tm,
 							nr_of_clauses,
@@ -84,7 +118,9 @@ class Paramtest:
 			txt = re.sub(r"\b"+key+r"\b", value, txt)
 		return txt
 
-	def DT(self):
+
+
+	def DT(self, rf_select = True):
 		#p_combs = len(next(iter(self.param_dict.values())))
 		p_combs = self.param_dict.shape[0]
 		tts = self.ttsplits()
