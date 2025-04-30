@@ -213,6 +213,7 @@ rtree2suff <- function(model){
 
 rp_rules_to_cna <- function(model, outcome, cutoff = 0.7){
   rules <- rpart.rules(model)
+  if(rules[1,2] == "null model") return("")
   rules[, outcome] <- as.numeric(rules[, outcome])
   rules <- rules[rules[, outcome] > cutoff,]
   rules <- do.call(paste, rules[,3:length(rules)])

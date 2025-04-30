@@ -45,7 +45,7 @@ if (length(LETTERS) < varnum){
 # to be used as targets. 
 # `relevants`:=number of factors included in the models.
 relevants <- 15
-targets <- replicate(20, rasf_hack(LETTERS[1:relevants], 
+targets <- replicate(50, rasf_hack(LETTERS[1:relevants], 
                                    outcome = "A",
                                    max.conj = 6,
                                    neg.prob = 0.5))
@@ -91,8 +91,7 @@ keep2 <- check_vars(ndat)
 targets <- targets[keep2]
 ndat <- ndat[keep2]
 
-d <- ndat[[1]]
-args <- expand.grid(c(2,3,4), c(0,2))
+args <- expand.grid(c(2,3,4,5), c(0,0.1,0.2, 0.3))
 names(args) <- c("maxdepth", "cp")
 
 pt <- vector("list", nrow(args))
@@ -109,18 +108,11 @@ rf_i_select <- function(dat, outcome, ntree){
   return(rf_f)
 }
 
-forms <- mclapply(ndat, \(x) rf_i_select(x, outcome, 260))
+forms <- mclapply(ndat, \(x) rf_i_select(x, outcome, 180))
 for(i in seq_along(pt)){
-  mods <- mcmapply(\(form, dat, ...) rpart(formula = form,
-                            data = dat, model = TRUE, method="class"), 
-         form = forms,
-         dat = ndat, 
-         MoreArgs = list(maxdepth = args$maxdepth[i],
-                         cp = args$cp[i],
-                         method = "class"),
-         SIMPLIFY = FALSE)
-  mods <- mclapply(mods, \(x) rp_rules_to_cna(x, outcome))
-  pt[[i]] <- unlist(mods)
+  mods <- mapply(rpart, forms, ndat, MoreArgs = list(model = TRUE, maxdepth = args$maxdepth[i], cp = args$cp[i], method = "class"), SIMPLIFY = FALSE)
+  mods2 <- lapply(mods, \(x) rp_rules_to_cna(x, outcome))
+  pt[[i]] <- unlist(mods2)
 }
 
 mix <- sapply(1:nrow(args), \(x) rep(x, length(ndat)), simplify = FALSE) |> unlist()
@@ -129,6 +121,11 @@ rest <- args[mix,]
 rest$model <- unlist(pt)
 rest$target <- replicate(nrow(args), unlist(targets), simplify = FALSE) |> unlist()
 rest$correct <- mapply(fcorrect, rest$model, rest$target, SIMPLIFY = FALSE) |> unlist()
+rest$complexity <- sapply(rest$model, cna::getComplexity, simplify = FALSE) |> unlist()
+rest <- as.data.table(rest)
+
+
+rest[, mean(correct), by = c("maxdepth", "cp")]
 
 tstamp <- gsub(" ", "_", date())
 
