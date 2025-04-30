@@ -13,6 +13,7 @@ library(caret)
 library(data.table)
 library(parallel)
 library(tidypredict)
+#library(parsnip)
 # #targets <- unlist(replicate(5, randomAsf(5, outcome = "A"), simplify = F))
 # 
 # mod <- "A*b+B*a<->C"
@@ -213,13 +214,7 @@ models <- lapply(minim,
                 \(x) if(x != "1" && nchar(x) > 0) paste0(x, "<->", outcome) else
                   "")
 
-fcorrect <- function(x, y){
-  if(nchar(x)==0){
-    return(FALSE)
-    } else {
-    return(frscore:::fsubmodel_asf(x, y))
-  }
-}
+
 
 cor <- mcmapply(fcorrect, x = models, y = targets)
 corpr <- sum(unlist(cor)) / length(cor)

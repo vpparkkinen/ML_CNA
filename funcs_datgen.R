@@ -30,6 +30,26 @@ bs_dat_create <- function(Nsets = 1e3,
 }
 
 
+#' Train/test splits
+#'
+#' @param x data.frame
+#' @param split split size
+#'
+#' @returns list
+#' @export
+#'
+#' @examples
+ttsplit <- function(x, split){
+  ind <- sample(2, nrow(x), 
+                replace = TRUE, 
+                prob = split)
+  train <- x[ind==1,]
+  test <- x[ind==2,]
+  return(list(train=train, test=test))
+}
+
+
+
 
 #' Change outcome column values.
 #'
@@ -128,3 +148,83 @@ rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
                    neg.prob = neg.prob)
   return(out)
 }
+
+
+
+
+#' Correct outcome imbalances
+#'
+#' @param mod cna model
+#' @param data data.frame with overprevalent outcome
+#' @param out outcome
+#' @param preval prevalence
+#'
+#' @returns data frame
+#' @export
+#' 
+#' @details
+#' Corrects outcome imbalance by oversampling cases with outcome absent.
+#' @examples
+alt_SC <- function(mod,data,out,preval){
+  a <- ct2df(selectCases(mod, data))
+  n <- nrow(a)
+  nout <- sum(a[out])
+  o_prev <- nout / n
+  if(o_prev > preval){
+    nn <- preval*n
+    to_add <- ceiling((nout - nn) / preval)
+    b <- ct2df(selectCases(mod, data[get(out)==0,]))
+    neg_outs <- b[sample(1:nrow(b), to_add, replace = TRUE),]
+    a <- rbind(a, neg_outs)
+  }
+  return(a)
+} 
+
+grab_lits <- function(model){
+  d <- frscore:::decompose_model(model)
+  out <- lapply(d$lhss, \(x) unlist(strsplit(x, "\\+")))
+  out <- lapply(out, \(x) unlist(strsplit(x, "\\*")))
+  #names(out) <- d$rhss
+  return(unlist(out))
+}
+
+fcorrect <- function(x, y){
+  if(nchar(x)==0){
+    return(FALSE)
+  } else {
+    return(frscore:::fsubmodel_asf(x, y))
+  }
+}
+
+rtree2suff <- function(model){
+  pattern_neg <- "([A-Za-z0-9]*)is0"
+  pattern_pos <- "([A-Za-z0-9]*)is1"
+  matches <- gregexpr(pattern_neg, model)
+  regmatches(model, matches) <- lapply(
+    regmatches(model, matches), \(x) tolower(gsub("is0", "", x))
+  ) 
+  matches <- gregexpr(pattern_pos, model)
+  regmatches(model, matches) <- lapply(
+    regmatches(model, matches), \(x) toupper(gsub("is1", "", x))
+  )
+  return(model)
+}
+
+
+rp_rules_to_cna <- function(model, outcome, cutoff = 0.7){
+  rules <- rpart.rules(model)
+  rules[, outcome] <- as.numeric(rules[, outcome])
+  rules <- rules[rules[, outcome] > cutoff,]
+  rules <- do.call(paste, rules[,3:length(rules)])
+  rules <- sapply(rules, \(x) gsub(" *$", "", x), USE.NAMES = FALSE)
+  rules <- sapply(rules, \(x) gsub(" ", "", x), USE.NAMES = FALSE)
+  rules <- sapply(rules, \(x) gsub("&", "*", x), USE.NAMES = FALSE)
+  suffs <- sapply(rules, rtree2suff, USE.NAMES = FALSE)
+  if (nchar(paste0(suffs, collapse = "")) == 0) {model <-  ""} else {
+    model <- paste(suffs, collapse = "+")
+    model <- paste0(model, "<->", outcome)
+  }
+  return(model)
+}
+
+

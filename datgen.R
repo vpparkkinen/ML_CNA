@@ -21,7 +21,7 @@ source("funcs_datgen.R")
 # `N` is number of observations, `varnum` is number of variables.
 # Worth considering increasing `N`. Increasing `varnum` results
 # in more irrelevant factors later on.
-varnum <- 24
+varnum <- 18
 outcome <- "A"
 base <- as.data.table(bs_dat_create(Nsets = 1, N = 100000, varnum = varnum)[[1]])
 
@@ -38,36 +38,13 @@ if (length(LETTERS) < varnum){
 # Create random binary CNA models for "A",
 # to be used as targets. 
 # `relevants`:=number of factors included in the models.
-relevants <- 20
-targets <- replicate(100, rasf_hack(LETTERS[1:relevants], 
+relevants <- 15
+targets <- replicate(20, rasf_hack(LETTERS[1:relevants], 
                                    outcome = "A",
                                    max.conj = 6,
                                    neg.prob = 0.5))
 
 
-# Corresponding to each target, create a "clean" data set where 
-# each observation is some configuration of variable values
-# that conforms to the target, selected from `base`.
-# Note that the irrelevant factors
-# may take any values whatsoever.
-# The way the targets are created results in ideal data
-# with extreme outcome prevalence. The function below
-# corrects for this by oversampling cases with
-# outcome absent and forcing desired outcome prevalence.
-alt_SC <- function(mod,data,out,preval){
-  a <- ct2df(selectCases(mod, data))
-  n <- nrow(a)
-  nout <- sum(a[out])
-  o_prev <- nout / n
-  if(o_prev > preval){
-    nn <- preval*n
-    to_add <- ceiling((nout - nn) / preval)
-    b <- ct2df(selectCases(mod, data[get(out)==0,]))
-    neg_outs <- b[sample(1:nrow(b), to_add, replace = TRUE),]
-    a <- rbind(a, neg_outs)
-  }
-  return(a)
-} 
 
 
 #cleandats <- lapply(targets, \(x) ct2df(selectCases(x, base)))
