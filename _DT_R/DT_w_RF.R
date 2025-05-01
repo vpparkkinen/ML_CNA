@@ -45,7 +45,7 @@ if (length(LETTERS) < varnum){
 # to be used as targets. 
 # `relevants`:=number of factors included in the models.
 relevants <- 15
-targets <- replicate(50, rasf_hack(LETTERS[1:relevants], 
+targets <- replicate(100, rasf_hack(LETTERS[1:relevants], 
                                    outcome = "A",
                                    max.conj = 6,
                                    neg.prob = 0.5))
@@ -91,13 +91,13 @@ keep2 <- check_vars(ndat)
 targets <- targets[keep2]
 ndat <- ndat[keep2]
 
-args <- expand.grid(c(2,3,4,5), c(0,0.1,0.2, 0.3))
+args <- expand.grid(c(2,3,4,5,6), c(0, 0.1, 0.2, 0.3, 0.4, 0.5))
 names(args) <- c("maxdepth", "cp")
 
 pt <- vector("list", nrow(args))
 
 rf_i_select <- function(dat, outcome, ntree){
-  te <-   te <- randomForest(x = dat[,-which(names(dat) == outcome)], 
+  te <- randomForest(x = dat[,-which(names(dat) == outcome)], 
                              y = as.factor(dat[,outcome]),
                              ntree = ntree, importance = TRUE)
   imp <- importance(te, class = 1)
@@ -108,7 +108,7 @@ rf_i_select <- function(dat, outcome, ntree){
   return(rf_f)
 }
 
-forms <- mclapply(ndat, \(x) rf_i_select(x, outcome, 180))
+forms <- mclapply(ndat, \(x) rf_i_select(x, outcome, 260))
 for(i in seq_along(pt)){
   mods <- mapply(rpart, forms, ndat, MoreArgs = list(model = TRUE, maxdepth = args$maxdepth[i], cp = args$cp[i], method = "class"), SIMPLIFY = FALSE)
   mods2 <- lapply(mods, \(x) rp_rules_to_cna(x, outcome))
@@ -125,7 +125,7 @@ rest$complexity <- sapply(rest$model, cna::getComplexity, simplify = FALSE) |> u
 rest <- as.data.table(rest)
 
 
-rest[, mean(correct), by = c("maxdepth", "cp")]
+#rest[, mean(correct), by = c("maxdepth", "cp")]
 
 tstamp <- gsub(" ", "_", date())
 
@@ -135,15 +135,15 @@ saveRDS(rest, paste0("rf_dt", tstamp))
 # rest[,mean(correct), by=c("maxdepth", "cp")]
 # rest[correct==TRUE]
 # 
-# model_facs <- lapply(rest$model, 
+# model_facs <- lapply(rest$model,
 #                      \(x) if(nchar(x) == 0) "" else grab_lits(x))
 # 
-# c_in_tar <- mapply(\(x,y) 
+# c_in_tar <- mapply(\(x,y)
 #                    sapply(x, \(z) {
 #                      if(nchar(z) == 0) FALSE else grepl(z, y)
-#                    }), 
-#                    x=model_facs, 
-#                    y=targets, 
+#                    }),
+#                    x=model_facs,
+#                    y=targets,
 #                    SIMPLIFY=FALSE)
 # 
 # which(sapply(c_in_tar, all)) |> length()
