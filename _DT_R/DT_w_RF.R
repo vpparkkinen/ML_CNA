@@ -125,28 +125,30 @@ rest$complexity <- sapply(rest$model, cna::getComplexity, simplify = FALSE) |> u
 rest <- as.data.table(rest)
 
 
-#rest[, mean(correct), by = c("maxdepth", "cp")]
 
 tstamp <- gsub(" ", "_", date())
 
 saveRDS(rest, paste0("rf_dt", tstamp))
 
+rest <- readRDS("../rmdtres.RDS")
+
+rest[, mean(correct), by = c("maxdepth", "cp")]
 # rest <- as.data.table(rest)
-# rest[,mean(correct), by=c("maxdepth", "cp")]
-# rest[correct==TRUE]
+rest[,mean(correct), by=c("maxdepth", "cp", "complexity")]
+rest[complexity==3]
 # 
-# model_facs <- lapply(rest$model,
-#                      \(x) if(nchar(x) == 0) "" else grab_lits(x))
-# 
-# c_in_tar <- mapply(\(x,y)
-#                    sapply(x, \(z) {
-#                      if(nchar(z) == 0) FALSE else grepl(z, y)
-#                    }),
-#                    x=model_facs,
-#                    y=targets,
-#                    SIMPLIFY=FALSE)
-# 
-# which(sapply(c_in_tar, all)) |> length()
+model_facs <- lapply(rest$model,
+                     \(x) if(nchar(x) == 0) "" else grab_lits(x))
+
+c_in_tar <- mapply(\(x,y)
+                   sapply(x, \(z) {
+                     if(nchar(z) == 0) FALSE else grepl(z, y)
+                   }),
+                   x=model_facs,
+                   y=targets,
+                   SIMPLIFY=FALSE)
+
+which(sapply(c_in_tar, all)) |> length()
 
 
 
