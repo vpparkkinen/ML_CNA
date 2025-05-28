@@ -41,12 +41,12 @@ outcome = "A"
 
 ##>>>>>>>>> Tsetlin Machine
 
-tm_params = {"number_of_clauses": [10,15], "T": [5,10], "s": [5,15], "platform": ["CPU"]}
+tm_params = {"number_of_clauses": [50,100,200,300], "T": [5,15,20], "s": [5,10], "platform": ["CPU"]}
 
 tm_params = expand_grid(tm_params)
 
 TM = Paramtest(dats[0:1], outcome=outcome, param_dict=tm_params,
-               test_size=0.2)
+               test_size=0.1)
 
 tm_results = TM.TM()
 
