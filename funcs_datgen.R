@@ -229,3 +229,47 @@ rp_rules_to_cna <- function(model, outcome, cutoff = 0.7){
 }
 
 
+grab_trees <- function(rf){
+  trees <- tidypredict_fit(rf)
+  trees <- lapply(trees, as.character)
+  trees <- lapply(trees, \(x) x[2:length(x)])
+  trees <- unlist(trees)
+  trees <- sapply(trees, \(x) gsub(" ", "", x), USE.NAMES = F)
+  trees <- trees[grepl("~\"1\"", trees)]
+  trees <- gsub("&", "*", trees)
+  trees <- gsub("~\"1\"", "", trees)
+  trees <- sapply(trees, treetosuff, USE.NAMES = F)
+  return(trees)
+}
+
+grab_trees_ns <- function(rf){
+  trees <- tidypredict_fit(rf)
+  trees <- lapply(trees, as.character)
+  trees <- lapply(trees, \(x) x[2:length(x)])
+  trees <- unlist(trees)
+  trees <- sapply(trees, \(x) gsub(" ", "", x), USE.NAMES = F)
+  trees <- trees[grepl("~\"1\"", trees)]
+  trees <- gsub("&", "*", trees)
+  trees <- gsub("~\"1\"", "", trees)
+  #trees <- sapply(trees, treetosuff, USE.NAMES = F)
+  return(trees)
+}
+
+
+
+treesuffs_to_dnf <- function(suffs){
+  if(length(suffs)==0) return("")
+  ta <- table(suffs)
+  best <- ta[which(ta >= sd(ta)*2)]
+  return(paste(names(best), collapse = "+"))
+}
+
+rf_to_dnf <- function(...){
+  dots <- list(...)
+  rf <- do.call(randomForest, dots)
+  out <- grab_trees(rf)
+  out <- treesuffs_to_dnf(out)
+  return(out)
+}
+
+
