@@ -154,17 +154,18 @@ rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
 
 #' Correct outcome imbalances
 #'
-#' @param mod cna model
-#' @param data data.frame -like object with overprevalent outcome
-#' @param out outcome
-#' @param preval prevalence
+#' @param mod cna model.
+#' @param data a `data.table` 
+#' @param out outcome.
+#' @param preval desired prevalence maximum.
 #'
 #' @returns data frame
 #' @export
 #' 
 #' @details
-#' Corrects outcome imbalance by oversampling cases with outcome absent.
-#' Note: expects `data` to be a `data.table`
+#' Creates a new data set by sampling rows from `data` with bias for 
+#' rows with absent outcome, to correct for outcome (over-)prevalence.
+#' 
 #' @examples
 alt_SC <- function(mod,data,out,preval){
   a <- ct2df(selectCases(mod, data))
