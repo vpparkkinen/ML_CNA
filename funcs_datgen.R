@@ -91,7 +91,7 @@ flipout <- function(data, outcome, proportion) {
 #'
 #' @param chr Character vector of factor names
 #' @param outcome Outcome
-#' @param max.conj Integer, maximum number of conjuncts in a disjunct
+#' @param max.conj Integer, maximum number of conjuncts/literals in a disjunct
 #' @param neg.prob Probability of negating a literal
 #'
 #' @return
@@ -155,7 +155,7 @@ rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
 #' Correct outcome imbalances
 #'
 #' @param mod cna model
-#' @param data data.frame with overprevalent outcome
+#' @param data data.frame -like object with overprevalent outcome
 #' @param out outcome
 #' @param preval prevalence
 #'
@@ -164,6 +164,7 @@ rasf_from_df <- function(data, outcome, max.conj = 3L, neg.prob = 0.5){
 #' 
 #' @details
 #' Corrects outcome imbalance by oversampling cases with outcome absent.
+#' Note: expects `data` to be a `data.table`
 #' @examples
 alt_SC <- function(mod,data,out,preval){
   a <- ct2df(selectCases(mod, data))
