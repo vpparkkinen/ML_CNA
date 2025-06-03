@@ -18,17 +18,24 @@ library(parallel)
 library(tidypredict)
 library(inTrees)
 nf <- 3
-sdat <- setNames(replicate(nf, rnorm(3000), simplify = F), 
+sdat <- setNames(replicate(nf, rnorm(6000), simplify = F), 
                  LETTERS[1:nf]) |> as.data.frame()
 
 qs <- lapply(sdat, quantile)
-"A + B + b*C"
+
+
+
 sdat$OUT <- case_when(sdat$A > qs$A[3] ~ as.factor(1L),
                     sdat$B > qs$B[3] ~ as.factor(1L),
-                    sdat$B < qs$B[3] & sdat$C > qs$B[3] ~ as.factor(1L),
+                    sdat$B < qs$B[3] & sdat$C > qs$C[3] ~ as.factor(1L),
+                    #sdat$A < qs$A[2] & sdat$C > qs$C[3]~ as.factor(1L),
                     .default = as.factor(0L)
                     )
 
+noise <- cbind(as.data.frame(setNames(replicate(nf, rnorm(600), simplify = F), 
+                  LETTERS[1:nf])), data.frame(OUT=as.factor(rbinom(600, 1, .5))))
+
+sdat <- rbind(sdat, noise)
 
 rf <- randomForest(OUT ~ ., data = sdat, 
                    importance = T, 
@@ -60,4 +67,12 @@ splitpoints <- lapply(
 )
 
 stables <- lapply(splitpoints, table)
+stables <- lapply(stables, \(x) x[order(x, decreasing = T)])
+lapply(stables, head)
 frsplits <- lapply(stables, \(x) x[which(x == max(x))])
+frsplits <- as.numeric(sapply(frsplits, names))
+
+unlist(lapply(qs, `[`, 3)) - frsplits
+
+
+
