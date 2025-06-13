@@ -9,7 +9,6 @@ if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
   setwd(dirname(path))
 }
 getwd() # Are we where we should be?
-
 library(cna) 
 library(data.table)
 # load some helper functions
@@ -36,17 +35,23 @@ if (length(LETTERS) < varnum){
                                    \(x) paste0("U", x)))
 }
 
-
+fnames <- names(base)
+exo_names_potential <- fnames[-which(fnames==outcome)]
+exof_names <- exo_names_potential[1:relevants]
 # Create random binary CNA models for "A",
 # to be used as targets. 
 # `relevants`:=number of factors included in the models.
-targets <- replicate(n_sets, rasf_hack(LETTERS[1:relevants], 
-                                   outcome = "A",
+targets <- replicate(n_sets, rasf_hack(exof_names, 
+                                   outcome = outcome,
                                    max.conj = 6,
                                    neg.prob = 0.5))
 
+# check that outcome does not accidentally appear in the model lhss
 
-
+lhss <- sapply(targets, lhs)
+if(any(unlist(sapply(lhss, \(x) grepl(outcome, x, ignore.case = T))))){
+  stop("CHECK OUTCOME!!!!!")
+}
 
 #cleandats <- lapply(targets, \(x) ct2df(selectCases(x, base)))
 
@@ -71,7 +76,7 @@ cleandats <- cleandats[keep]
 # in about 10% of observations.
 # Will take a while.
 ndat <- lapply(cleandats, 
-               \(x) flipout(x, outcome = "A", proportion = 0.1))
+               \(x) flipout(x, outcome = outcome, proportion = 0.1))
                
 # check that outcome varies in each noisy data set, discard if not
 
