@@ -74,5 +74,11 @@ frsplits <- as.numeric(sapply(frsplits, names))
 
 unlist(lapply(qs, `[`, 3)) - frsplits
 
+datcs <- fs2cs(dat) # need to binarize the data
+selectCases(MyMmodel, dat) |> nrow() #consistent
+nrow(dat) - (selectCases(MyMmodel, dat) |> nrow()) #not consistent
+
+selectCases(paste0("!(",model,")"), dat) |> nrow()
+configTable(model, d.autonomy)
 
 
