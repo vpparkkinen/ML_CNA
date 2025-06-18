@@ -10,6 +10,7 @@ debugpy==1.8.13
 decorator==5.2.1
 executing==2.2.0
 fonttools==4.56.0
+gplearn==0.4.2
 idna==3.10
 ipykernel==6.29.5
 ipython==9.0.2
@@ -22,8 +23,9 @@ kiwisolver==1.4.8
 logging==0.4.9.6
 matplotlib==3.10.1
 matplotlib-inline==0.1.7
+mpmath==1.3.0
 nest-asyncio==1.6.0
-numpy==2.2.3
+numpy==1.26.4
 packaging==24.2
 pandas==2.2.3
 parso==0.8.4
@@ -42,10 +44,11 @@ pyTsetlinMachine==0.6.6
 pytz==2025.1
 pyzmq==26.3.0
 requests==2.32.3
-scikit-learn==1.6.1
+scikit-learn==1.3.1
 scipy==1.15.2
 six==1.17.0
 stack-data==0.6.3
+sympy==1.14.0
 threadpoolctl==3.5.0
 tmu @ git+https://github.com/cair/tmu.git@a9fb1c26c240d4ebb5f448b06295497b027544c7
 tornado==6.4.2
