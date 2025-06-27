@@ -15,7 +15,7 @@ nfil = len([1 for x in list(os.scandir("data")) if x.is_file()])
 # load data sets
 dats = []
 for f in range(1, nfil+1):
-  dats.append(pd.read_csv("data/dat"+str(f)+".csv", sep = ";", dtype=np.uint32))
+  dats.append(pd.read_csv("data/dat"+str(f)+".csv", sep = ",", dtype=np.uint32))
 
 # increase N
 # dats = [pd.concat([i] * 100, ignore_index=True) for i in dats]
@@ -24,33 +24,31 @@ outcome = "A"
 
 # ##>>>>>>>>> Decision tree
 
-# dt_params = {"max_depth": [3,5], "max_features": [20], "max_leaf_nodes": [8, 15], "criterion": ["gini", "entropy"]}
+dt_params = {"max_depth": [5,14], "max_features": [14], "max_leaf_nodes": [15, 30], "criterion": ["gini", "entropy"]}
 
-# dt_params = expand_grid(dt_params)
+dt_params = expand_grid(dt_params)
 
-# DT = Paramtest(dats, outcome=outcome, param_dict=dt_params,
-#                test_size=0.2)
+DT = Paramtest(dats, outcome=outcome, param_dict=dt_params,
+               test_size=0.2)
 
-# dt_results = DT.DT()
+dt_results = DT.DT()
 
-# dtall = pd.concat(dt_results)
-# filename = "dtres"+time.strftime("%d%m%Y-%Hh%Mm")+".csv"
-# dtall.to_csv(filename)
+dtall = pd.concat(dt_results)
+filename = "dtres"+time.strftime("%d%m%Y-%Hh%Mm")+".csv"
+dtall.to_csv(filename)
 
 # ##<<<<<<<<< Decision tree
 
 ##>>>>>>>>> Tsetlin Machine
 
-tm_params = {"number_of_clauses": [50,100,200,300], "T": [5,15,20], "s": [5,10], "platform": ["CPU"]}
+tm_params = {"number_of_clauses": [10], "T": [5], "s": [5], "platform": ["CPU"]}
 
 tm_params = expand_grid(tm_params)
-
-TM = Paramtest(dats[0:1], outcome=outcome, param_dict=tm_params,
+dats=dats[0:1]
+TM = Paramtest(dats, outcome=outcome, param_dict=tm_params,
                test_size=0.1)
 
 tm_results = TM.TM()
-
-
 
 
 tmall = pd.concat(tm_results)
