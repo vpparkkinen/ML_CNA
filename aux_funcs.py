@@ -12,6 +12,63 @@ def expand_grid(data_dict):
     rows = itertools.product(*data_dict.values())
     return pd.DataFrame.from_records(rows, columns=data_dict.keys())
 
+def assign_outcome(varnames, data, expr):
+  """based on `expr`, assigns an outcome
+  value for each row of `data`. For the time being,
+  `expr` needs to be given as pythonesque boolean expression.
+  TO DO: translate from cna syntax automatically."""
+  N = data.shape[0]
+  outvals = np.zeros((N,1)).astype(int)
+  for i in range(N):
+    config = dict(zip(varnames, data[i,:]))
+    outvals[i] = eval(expr, {}, config)
+  return outvals
+
+def check_consistency(out, varnames, data, expr):
+	predicted = assign_outcome(varnames=varnames, data=data, expr=expr)
+	out = sum(out.flatten() == predicted.flatten()) / data.shape[0]
+	return out
+
+def consistency(out, varnames, data, expr):
+	predicted = assign_outcome(varnames=varnames, data=data, expr=expr).flatten()
+	idx = predicted == 1
+	ones = out[idx]
+	consi = (sum(out[idx] == predicted[idx])) / len(predicted[idx])
+	return consi
+
+def selectCases(condition: str,
+								condtype: str,
+								feat_names=None,
+								X=None,
+								y=None):
+	condT = None
+	if X is None or y is None:
+		varnames = condition.split()
+		boolops = ["and", "or", "not"]
+		feat_names = [x for x in varnames if x not in boolops]
+		vl = len(feat_names)
+		X = np.array(list(itertools.product([0,1], repeat=vl))).astype(int)
+		y = assign_outcome(feat_names, X, condition).flatten()
+		condT = y.astype(bool)
+		#return("not implemented yet")
+	if condT is None:
+		condT = assign_outcome(feat_names, X, condition).flatten().astype(bool)
+
+	c_is_y = condT == y
+	if condtype == "suff":
+		suffmask = c_is_y + condT
+		Xout = X[suffmask]
+		yout = y[suffmask]
+	elif condtype == "suffnec":
+		Xout = X[c_is_y]
+		yout = y[c_is_y]
+	else:
+		print('no valid condtype (`suff` or `suffnec`) given')
+		return(None)
+	outdict = {"X": Xout, "y": yout}
+	return outdict
+
+
 class Paramtest:
 	def __init__(self, datasets, outcome, param_dict, test_size):
 		#self.model = model
@@ -37,7 +94,9 @@ class Paramtest:
 		p_combs = self.param_dict.shape[0]
 		cna_lits = self.feat_names + [x.lower() for x in self.feat_names]
 		tm_pos_lits = ["X"+i for i in map(str, list(range(len(self.feat_names))))]
-		tm_neg_lits = [i.lower() for i in tm_pos_lits]
+		#tm_neg_lits = [i.lower() for i in tm_pos_lits]
+		tm_neg_lits = ["not " + i for i in tm_pos_lits]
+
 		tm_lits = tm_pos_lits + tm_neg_lits
 		f_translate_dict = dict(zip(tm_lits, cna_lits))
 		allres = []
@@ -88,7 +147,61 @@ class Paramtest:
 			clauses.append("*".join(l))
 		return clauses
 
+	# @staticmethod
+	# def clauses_from_TM(tm, nr_of_clauses, number_of_features):
+	# 	clauses = []
+	# 	for j in range(nr_of_clauses // 2):
+	# 		l = []
+	# 		for k in range(number_of_features * 2):
+	# 			if tm.get_ta_action(j, k, the_class=1, polarity=0):
+	# 				if k < number_of_features:
+	# 					l.append(f"X{k}")
+	# 				else:
+	# 					l.append(f"x{k - number_of_features}")
+	# 		clauses.append("*".join(l))
+	# 	return clauses
 
+	# @staticmethod
+	# def poscfTM_as_not(tm, nr_of_clauses, number_of_features):
+	# 	clauses = []
+	# 	for j in range(nr_of_clauses // 2):
+	# 		l = []
+	# 		for k in range(number_of_features * 2):
+	# 			if tm.get_ta_action(j, k, the_class=1, polarity=0):
+	# 				if k < number_of_features:
+	# 					l.append(f"X{k}")
+	# 				else:
+	# 					l.append(f"not X{k - number_of_features}")
+	# 		clauses.append(" and ".join(l))
+	# 	return clauses
+
+	# @staticmethod
+	# def negcfTM_as_not(tm, nr_of_clauses, number_of_features):
+	# 	clauses = []
+	# 	for j in range(nr_of_clauses // 2):
+	# 		l = []
+	# 		for k in range(number_of_features * 2):
+	# 			if tm.get_ta_action(j, k, the_class=0, polarity=0):
+	# 				if k < number_of_features:
+	# 					l.append(f"X{k}")
+	# 				else:
+	# 					l.append(f"not X{k - number_of_features}")
+	# 		clauses.append(" and ".join(l))
+	# 	return clauses
+
+	@staticmethod
+	def poscfTMnot(tm, nr_of_clauses, number_of_features):
+		clauses = []
+		for j in range(nr_of_clauses // 2):
+			l = []
+			for k in range(number_of_features * 2):
+				if tm.get_ta_action(j, k, the_class=1, polarity=0):
+					if k < number_of_features:
+						l.append(f"X{k}")
+					else:
+						l.append(f"not X{k - number_of_features}")
+			clauses.append(" and ".join(l))
+		return clauses
 
 		# clauses = []
     # for j in range(args.number_of_clauses // 2):
@@ -107,9 +220,14 @@ class Paramtest:
 							nr_of_clauses,
 							nr_of_features,
 							translate_dict):
-		fitted_clauses = Paramtest.clauses_from_TM(tm, nr_of_clauses, nr_of_features)
+		# fitted_clauses = Paramtest.clauses_from_TM(tm, nr_of_clauses, nr_of_features)
+		print(translate_dict)
+		fitted_clauses = Paramtest.poscfTMnot(tm, nr_of_clauses, nr_of_features)
+		print(fitted_clauses)
 		suffs = [Paramtest.tm_clause_to_cna(x, translate_dict) for x in fitted_clauses]
 		suffs = list(filter(lambda x: len(x) != 0, suffs))
+		suffs = [re.sub(r'not\s+([A-Z]+)', lambda match: match.group(1).lower(), x) for x in suffs]
+		suffs = [re.sub(" and ", "*", x) for x in suffs]
 		return "+".join(set(suffs))
 
 	@staticmethod
