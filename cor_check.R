@@ -13,7 +13,7 @@ outcome = "A"
 targets <- readLines(file("targets.txt"))
 # load preprocessed results created by DT/TM/whatever
 
-res <- fread("tmres14052025-21h01m.csv", sep = ",")
+res <- fread("tmres18062025-11h24m.csv", sep = ",")
 res[,V1:=NULL]
 
 iters <- nrow(unique(res[,-c("models")]))
@@ -33,12 +33,16 @@ res <- res[nemp,]
 # minimize, check for non-empty result again, for some reason
 r_conds <- mclapply(res$models,
                   \(x) if (nchar(x) == 0) return("") else rreduce(x))
+r_conds_backup <- r_conds
 
+tautologies <- sapply(r_conds, \(x) x == "1")
+avg_tautologies <- sum(tautologies) / length(tautologies)
 # paste the outcome to model lhs's
 r_conds <- lapply(r_conds, \(x) sapply(x, \(y) paste0(y, "<->", outcome),
                                        USE.NAMES = FALSE))
 
-res[,rmodels := unlist(r_conds)]
+r_conds <- sapply(r_conds, \(x) gsub("^1", "TAUT", x))
+res[,rmodels := r_conds]
 
 ## Check correctness, use the command on line 31 (commented out)
 ## if using ereduce() for minimization.
@@ -57,7 +61,7 @@ cors <- mcmapply(\(x, y) frscore:::fsubmodel_asf(x, y),
                SIMPLIFY = FALSE,
                USE.NAMES = TRUE)
 
-res[,correct:=unlist(cors)]
+res[,correct:=cors]
 #res[,sum(correct), by = c("number_of_clauses", "T", "s")]
 
 tstamp <- gsub(" ", "_", date())
@@ -79,8 +83,8 @@ grab_lits <- function(model){
   return(unlist(out))
 }
 
-# model_facs <- lapply(r_conds, grab_lits)
+model_facs <- lapply(r_conds, grab_lits)
 
-c_in_tar <- mapply(\(x,y) sapply(x, \(z) grepl(z, y)), x=model_facs, y=targets, SIMPLIFY=FALSE)
+c_in_tar <- mapply(\(x,y) sapply(x, \(z) grepl(z, y, ignore.case = T)), x=model_facs, y=targets, SIMPLIFY=FALSE)
 
 which(sapply(c_in_tar, all)) |> length()
