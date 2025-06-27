@@ -20,9 +20,9 @@ source("funcs_datgen.R")
 # `N` is number of observations, `varnum` is number of variables.
 # Worth considering increasing `N`. Increasing `varnum` results
 # in more irrelevant factors later on.
-varnum <- 18 # n. of variables in total
-relevants <- 15 # n. of causally relevant variables
-n_sets <- 100 # n. of targets and data sets to create
+varnum <- 15 # n. of variables in total
+relevants <- 14 # n. of causally relevant variables
+n_sets <- 30 # n. of targets and data sets to create
 outcome <- "A" # outcome
 
 # random data to choose observations from 
