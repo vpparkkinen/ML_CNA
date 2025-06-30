@@ -17,6 +17,8 @@ def assign_outcome(varnames, data, expr):
   value for each row of `data`. For the time being,
   `expr` needs to be given as pythonesque boolean expression.
   TO DO: translate from cna syntax automatically."""
+  print(data)
+  print(expr)
   N = data.shape[0]
   outvals = np.zeros((N,1)).astype(int)
   for i in range(N):
@@ -31,9 +33,13 @@ def check_consistency(out, varnames, data, expr):
 
 def consistency(out, varnames, data, expr):
 	predicted = assign_outcome(varnames=varnames, data=data, expr=expr).flatten()
+	print("len data: "+str(len(data)))
+	print(len(predicted))
 	idx = predicted == 1
+	print("idx: "+ str(len(idx)))
+	print("out: "+ str(len(out)))
 	ones = out[idx]
-	consi = (sum(out[idx] == predicted[idx])) / len(predicted[idx])
+	consi = (sum(out[idx] == predicted[idx])) / (len(predicted[idx]) + 0.0001)
 	return consi
 
 def selectCases(condition: str,
@@ -88,7 +94,7 @@ class Paramtest:
 		tts = dict(zip(["X_train", "X_test", "y_train", "y_test"],  map(list, zip(*tt_splits))))
 		return tts
 
-	def TM(self, epochs = 200, incremental = False):
+	def TM(self, epochs = 200, con = 0.85, incremental = False):
 		tts = self.ttsplits()
 		#p_combs = len(next(iter(self.param_dict.values())))
 		p_combs = self.param_dict.shape[0]
@@ -103,6 +109,7 @@ class Paramtest:
 		for comb in range(p_combs):
 			models = []
 			for dat in range(len(self.datasets)):
+				print(f"data set n. {dat}")
 				# tmargs = {x: y[comb] for x, y in self.param_dict.items()}
 				tmargs = self.param_dict.iloc[comb,].to_dict()
 				print(dat)
@@ -110,8 +117,17 @@ class Paramtest:
 				#tm = MultiClassTsetlinMachine(**tmargs)
 				tm = TMClassifier(**tmargs)
 				#tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs, incremental=incremental)
+				print("X " + str(tts["X_train"][dat].shape[1]))
+				print("y " + str(tts["y_train"][dat].shape[0]))
 				tm.fit(tts["X_train"][dat], tts["y_train"][dat], epochs=epochs)
-				models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
+				presuff = Paramtest.poscfTMnot(tm, tm.number_of_clauses, self.n_feature)
+				cons = [consistency(tts["y_train"][dat], tm_pos_lits, tts["X_train"][dat], x) for x in presuff]
+				pick = [x >= con for x in cons]
+				print(presuff)
+				suffs = [x for y, x in zip(pick, presuff) if y]
+				print(suffs)
+				# models.append(self.tm_to_asf(tm, tm.number_of_clauses, self.n_feature, f_translate_dict))
+				models.append(Paramtest.clauses_to_asf(suffs, f_translate_dict))
 			res = {"models": models}
 			res.update(tmargs)
 			respd = pd.DataFrame(res)
@@ -216,19 +232,35 @@ class Paramtest:
     #     clauses.append(" ∧ ".join(l))
     # d_clauses[f"Positive clauses for outcome={1}"] = clauses
 
-	def tm_to_asf(self, tm,
-							nr_of_clauses,
-							nr_of_features,
+	# def tm_to_asf(self, tm,
+	# 						nr_of_clauses,
+	# 						nr_of_features,
+	# 						translate_dict):
+	# 	# fitted_clauses = Paramtest.clauses_from_TM(tm, nr_of_clauses, nr_of_features)
+	# 	print(translate_dict)
+	# 	fitted_clauses = Paramtest.poscfTMnot(tm, nr_of_clauses, nr_of_features)
+	# 	print(fitted_clauses)
+	# 	suffs = [Paramtest.tm_clause_to_cna(x, translate_dict) for x in fitted_clauses]
+	# 	suffs = list(filter(lambda x: len(x) != 0, suffs))
+	# 	suffs = [re.sub(r'not\s+([A-Z]+)', lambda match: match.group(1).lower(), x) for x in suffs]
+	# 	suffs = [re.sub(" and ", "*", x) for x in suffs]
+	# 	return "+".join(set(suffs))
+	@staticmethod
+	def clauses_to_asf(fitted_clauses,
+							#nr_of_clauses,
+							#nr_of_features,
 							translate_dict):
 		# fitted_clauses = Paramtest.clauses_from_TM(tm, nr_of_clauses, nr_of_features)
 		print(translate_dict)
-		fitted_clauses = Paramtest.poscfTMnot(tm, nr_of_clauses, nr_of_features)
+		#fitted_clauses = Paramtest.poscfTMnot(tm, nr_of_clauses, #nr_of_features)
 		print(fitted_clauses)
 		suffs = [Paramtest.tm_clause_to_cna(x, translate_dict) for x in fitted_clauses]
 		suffs = list(filter(lambda x: len(x) != 0, suffs))
 		suffs = [re.sub(r'not\s+([A-Z]+)', lambda match: match.group(1).lower(), x) for x in suffs]
 		suffs = [re.sub(" and ", "*", x) for x in suffs]
 		return "+".join(set(suffs))
+
+
 
 	@staticmethod
 	def tm_clause_to_cna(txt, translate_dict):
