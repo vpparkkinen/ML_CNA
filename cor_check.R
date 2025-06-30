@@ -13,8 +13,10 @@ outcome = "A"
 targets <- readLines(file("targets.txt"))
 # load preprocessed results created by DT/TM/whatever
 
-res <- fread("tmres18062025-11h24m.csv", sep = ",")
+res <- fread("tmres30062025-13h43m.csv", sep = ",")
 res[,V1:=NULL]
+#dat1 <- fread("data/dat1.csv", sep = ",")
+  
 
 iters <- nrow(unique(res[,-c("models")]))
 targets <- replicate(iters, targets)
@@ -72,7 +74,7 @@ saveRDS(res, paste0("TM_checked", tstamp))
 cors <- unlist(lapply(cors, any))
 cor_percentage <- sum(cors) / length(targets)
 
-
+res[correct==TRUE, sapply(rmodels, getComplexity)] |> mean()
 ### Optional: Check for determining if the models include
 ### irrelevant factors.
 grab_lits <- function(model){
