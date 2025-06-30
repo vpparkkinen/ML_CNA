@@ -24,18 +24,18 @@ outcome = "A"
 
 # ##>>>>>>>>> Decision tree
 
-dt_params = {"max_depth": [5,14], "max_features": [14], "max_leaf_nodes": [15, 30], "criterion": ["gini", "entropy"]}
+# dt_params = {"max_depth": [5,14], "max_features": [14], "max_leaf_nodes": [15, 30], "criterion": ["gini", "entropy"]}
 
-dt_params = expand_grid(dt_params)
+# dt_params = expand_grid(dt_params)
 
-DT = Paramtest(dats, outcome=outcome, param_dict=dt_params,
-               test_size=0.2)
+# DT = Paramtest(dats, outcome=outcome, param_dict=dt_params,
+#                test_size=0.2)
 
-dt_results = DT.DT()
+# dt_results = DT.DT()
 
-dtall = pd.concat(dt_results)
-filename = "dtres"+time.strftime("%d%m%Y-%Hh%Mm")+".csv"
-dtall.to_csv(filename)
+# dtall = pd.concat(dt_results)
+# filename = "dtres"+time.strftime("%d%m%Y-%Hh%Mm")+".csv"
+# dtall.to_csv(filename)
 
 # ##<<<<<<<<< Decision tree
 
