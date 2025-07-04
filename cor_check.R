@@ -13,13 +13,13 @@ outcome = "A"
 targets <- readLines(file("targets.txt"))
 # load preprocessed results created by DT/TM/whatever
 
-res <- fread("tmres30062025-13h43m.csv", sep = ",")
+res <- fread("tmres01072025-23h49m.csv", sep = ",")
 res[,V1:=NULL]
 #dat1 <- fread("data/dat1.csv", sep = ",")
   
 
 iters <- nrow(unique(res[,-c("models")]))
-targets <- replicate(iters, targets)
+targets <- replicate(iters, targets[1:9])
 targets <- c(targets)
 
 

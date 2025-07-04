@@ -17,6 +17,7 @@ dats = []
 for f in range(1, nfil+1):
   dats.append(pd.read_csv("data/dat"+str(f)+".csv", sep = ",", dtype=np.uint32))
 
+dats = dats[0:9]
 # increase N
 # dats = [pd.concat([i] * 100, ignore_index=True) for i in dats]
 
@@ -41,16 +42,21 @@ outcome = "A"
 
 ##>>>>>>>>> Tsetlin Machine
 
-tm_params = {"number_of_clauses": [10], "T": [5], "s": [5], "platform": ["CPU"]}
-
+tm_params = {"number_of_clauses": [10,50,100], "T": [5,10], "s": [5], "platform": ["CPU"]}
 tm_params = expand_grid(tm_params)
-dats=dats[0:1]
+#dats = dats[2:5]
 TM = Paramtest(dats, outcome=outcome, param_dict=tm_params,
                test_size=0.1)
 
+
+
 tm_results = TM.TM()
+# tm2 = TMClassifier(100, 10, 5)
+# TM.ttsplits()
+# tm2.fit(TM.ttsplits()["X_train"][2], TM.ttsplits()["y_train"][2])
 
-
+# tm2c=Paramtest.poscfTMnot(tm2, 100, 14)
+# consistency(TM.ys[0], ['X1', 'X5', 'X11'], TM.Xs[0], 'X1 and X5 and not X11')
 tmall = pd.concat(tm_results)
 filename = "tmres"+time.strftime("%d%m%Y-%Hh%Mm")+".csv"
 tmall.to_csv(filename)

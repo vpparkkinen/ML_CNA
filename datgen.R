@@ -21,7 +21,7 @@ source("funcs_datgen.R")
 # Worth considering increasing `N`. Increasing `varnum` results
 # in more irrelevant factors later on.
 varnum <- 15 # n. of variables in total
-relevants <- 14 # n. of causally relevant variables
+relevants <- 12 # n. of causally relevant variables
 n_sets <- 30 # n. of targets and data sets to create
 outcome <- "A" # outcome
 
