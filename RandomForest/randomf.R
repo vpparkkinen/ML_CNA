@@ -161,7 +161,7 @@ datfiles <- list.files(
   ignore.case = T,
   full.names = T
 )
-ndat <- lapply(datfiles, \(x) as.data.frame(fread(x)))
+ndat <- fread("../data/dat1.csv", sep = ",")
 
 treetosuff <- function(model){
   pattern_leq <- "([A-Za-z0-9]*)<0\\.5"
@@ -193,7 +193,7 @@ grab_trees <- function(rf){
 treesuffs_to_dnf <- function(suffs){
   if(length(suffs)==0) return("")
   ta <- table(suffs)
-  best <- ta[which(ta >= sd(ta)*2)]
+  best <- ta[which(ta >= (sd(ta)*2+mean(ta)))]
   return(paste(names(best), collapse = "+"))
 }
 
@@ -205,7 +205,13 @@ rf_to_dnf <- function(...){
   return(out)
 }
 
-res <- mclapply(ndat, 
+ndat <- as.data.frame(ndat)
+res <- randomForest(x = ndat[,-which(names(ndat)=="A")], 
+                    y = as.factor(ndat[,"A"]), ntree = 10, maxnodes = 4)
+
+tidypredict_fit(res)
+
+res <- lapply(ndat, 
                 \(z) rf_to_dnf(x = z[,-which(names(z)==outcome)],
                                y = as.factor(z[,outcome]),
                                ntree = 140,
