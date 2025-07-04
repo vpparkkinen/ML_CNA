@@ -17,16 +17,22 @@ def assign_outcome(varnames, data, expr):
   value for each row of `data`. For the time being,
   `expr` needs to be given as pythonesque boolean expression.
   TO DO: translate from cna syntax automatically."""
-  print(data)
-  print(expr)
+  #print(data)
+  #print(expr)
   N = data.shape[0]
   outvals = np.zeros((N,1)).astype(int)
   for i in range(N):
     config = dict(zip(varnames, data[i,:]))
-    outvals[i] = eval(expr, {}, config)
+    try:
+      outvals[i] = eval(expr, {}, config)
+    except:
+      print(expr)
+      print(config)
   return outvals
 
 def check_consistency(out, varnames, data, expr):
+	if len(expr)==0:
+		return 0
 	predicted = assign_outcome(varnames=varnames, data=data, expr=expr)
 	out = sum(out.flatten() == predicted.flatten()) / data.shape[0]
 	return out
